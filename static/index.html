@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI PDF Chat Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 2s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #chatSection { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-3xl font-bold">AI PDF Chat Assistant</h1>
+        </header>
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Upload PDF</h2>
+            <form id="uploadForm" class="flex items-center space-x-4">
+                <input type="file" id="pdfFile" accept=".pdf" class="hidden" />
+                <label for="pdfFile" class="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-600 transition duration-300">
+                    <i data-lucide="upload" class="inline-block mr-2"></i> Choose PDF
+                </label>
+                <span id="fileName" class="text-gray-600"></span>
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300">
+                    <i data-lucide="send" class="inline-block mr-2"></i> Upload
+                </button>
+                <div id="uploadLoader" class="loader hidden"></div>
+            </form>
+            <div id="uploadStatus" class="mt-4 text-sm"></div>
+        </section>
+        <section id="chatSection" class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Chat with PDF</h2>
+            <div class="flex space-x-4">
+                <input type="text" id="chatInput" placeholder="Ask a question about the PDF..." class="flex-grow border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <button id="chatButton" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300">
+                    <i data-lucide="message-circle" class="inline-block mr-2"></i> Chat
+                </button>
+                <div id="chatLoader" class="loader hidden"></div>
+            </div>
+            <div id="chatResponse" class="mt-4 p-4 bg-white rounded shadow"></div>
+        </section>
+    </div>
+    <script>
+        lucide.createIcons();
+
+        const fileInput = document.getElementById('pdfFile');
+        const fileNameDisplay = document.getElementById('fileName');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const uploadLoader = document.getElementById('uploadLoader');
+        const chatSection = document.getElementById('chatSection');
+        const chatInput = document.getElementById('chatInput');
+        const chatButton = document.getElementById('chatButton');
+        const chatResponse = document.getElementById('chatResponse');
+        const chatLoader = document.getElementById('chatLoader');
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (file) {
+                fileNameDisplay.textContent = `${file.name}`;
+            }
+        });
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = fileInput.files[0];
+            if (!file) {
+                displayUploadStatus('No file selected.', 'text-red-600');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            uploadLoader.classList.remove('hidden');
+            try {
+                const response = await fetch('/upload_pdf', { method: 'POST', body: formData });
+                const result = await response.json();
+                const uploadedFileName = result.filename;
+                displayUploadStatus(`${uploadedFileName} uploaded successfully!`, 'text-green-600');
+                uploadLoader.classList.add('hidden');
+                chatSection.style.display = 'block';
+            } catch (error) {
+                displayUploadStatus(`Error uploading file: ${error.message}`, 'text-red-600');
+                uploadLoader.classList.add('hidden');
+            }
+        });
+
+        function displayUploadStatus(message, className) {
+            uploadStatus.textContent = message;
+            uploadStatus.className = `mt-4 text-sm ${className}`;
+        }
+
+        chatButton.addEventListener('click', async () => {
+            const query = chatInput.value.trim();
+            if (!query) return;
+            chatLoader.classList.remove('hidden');
+            try {
+                const response = await fetch('/chat_pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                const result = await response.json();
+                displayChatResponse(result.answer);
+                chatLoader.classList.add('hidden');
+            } catch (error) {
+                displayChatResponse(`Error: ${error.message}`);
+                chatLoader.classList.add('hidden');
+            }
+        });
+
+        function displayChatResponse(answer) {
+            chatResponse.innerHTML = answer.replace(/\n/g, '<br>');
+        }
+    </script>
+</body>
+</html>
