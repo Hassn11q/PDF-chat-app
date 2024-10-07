@@ -43,18 +43,14 @@ pip install -r requirements.txt
 
 ```bash
 COHERE_API_KEY=your_cohere_api_key
-PORT=8000  # Optional: set the port number
 ```
 
 ## Running the Application
 To start the FastAPI application, run the following command:
 ```bash
-uvicorn main:app --host 0.0.0.0 --port $PORT
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 ## Accessing the Application
 Once the server is running, you can access the application at http://localhost:8000. You can also access the interactive API documentation at http://localhost:8000/docs.
 
 
-
-
-# PDF-chat-app
